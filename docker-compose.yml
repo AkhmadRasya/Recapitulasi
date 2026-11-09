@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  # 1. Aplikasi Laravel (Container Utama yang sama dengan Render)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kelurahan_app
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      APP_NAME: "Kelurahan Sungai Andai"
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_KEY: "base64:kgzWQZAfXz8RpiLedn1oQ2QubOFN5wdCR3QlK/12ZLw="
+      APP_URL: "http://localhost:8080"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: recapitulasi
+      DB_USERNAME: laravel
+      DB_PASSWORD: secretpassword
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - kelurahan_net
+
+  # 2. Database MySQL (Untuk pengujian lokal)
+  db:
+    image: mysql:8.0
+    container_name: kelurahan_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: recapitulasi
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secretpassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - kelurahan_dbdata:/var/lib/mysql
+    networks:
+      - kelurahan_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 3. phpMyAdmin (Opsional, untuk memantau database lokal)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: kelurahan_pma
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+    depends_on:
+      - db
+    networks:
+      - kelurahan_net
+
+networks:
+  kelurahan_net:
+    driver: bridge
+
+volumes:
+  kelurahan_dbdata:
+    driver: local
+
